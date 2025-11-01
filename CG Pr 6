@@ -1,0 +1,121 @@
+#include <graphics.h>
+#include <iostream>
+#include <cmath>
+using namespace std;
+
+// ======================
+// DDA Line Drawing
+// ======================
+void drawLineDDA(int x1, int y1, int x2, int y2, int style) {
+    int dx = x2 - x1;
+    int dy = y2 - y1;
+    int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+
+    float Xinc = dx / (float)steps;
+    float Yinc = dy / (float)steps;
+
+    float X = x1;
+    float Y = y1;
+
+    for (int i = 0; i <= steps; i++) {
+        // Dotted style
+        if (style == 1 && i % 5 != 0) continue;
+
+        // Thick style (draws multiple pixels nearby)
+        if (style == 2) {
+            putpixel(round(X), round(Y), WHITE);
+            putpixel(round(X)+1, round(Y), WHITE);
+            putpixel(round(X), round(Y)+1, WHITE);
+        } else {
+            putpixel(round(X), round(Y), WHITE);
+        }
+
+        X += Xinc;
+        Y += Yinc;
+    }
+}
+
+// ======================
+// Bresenham Line Drawing
+// ======================
+void drawLineBresenham(int x1, int y1, int x2, int y2, int style) {
+    int dx = abs(x2 - x1);
+    int dy = abs(y2 - y1);
+    int sx = (x1 < x2) ? 1 : -1;
+    int sy = (y1 < y2) ? 1 : -1;
+    int err = dx - dy;
+
+    while (true) {
+        // Dashed style
+        if (style == 1 && ((x1 + y1) / 5) % 2 == 0)
+            putpixel(x1, y1, WHITE);
+
+        // Solid style
+        if (style == 2)
+            putpixel(x1, y1, WHITE);
+
+        if (x1 == x2 && y1 == y2)
+            break;
+
+        int e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x1 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y1 += sy;
+        }
+    }
+}
+
+// ======================
+// Draw Rectangle using DDA
+// ======================
+void drawRectangleDDA(int x, int y, int width, int height, int style) {
+    drawLineDDA(x, y, x + width, y, style);           // Top
+    drawLineDDA(x + width, y, x + width, y + height, style); // Right
+    drawLineDDA(x + width, y + height, x, y + height, style); // Bottom
+    drawLineDDA(x, y + height, x, y, style);          // Left
+}
+
+// ======================
+// Draw Diamond using Bresenham
+// ======================
+void drawDiamondBresenham(int xc, int yc, int size, int style) {
+    drawLineBresenham(xc, yc - size, xc + size, yc, style); // Top-right
+    drawLineBresenham(xc + size, yc, xc, yc + size, style); // Bottom-right
+    drawLineBresenham(xc, yc + size, xc - size, yc, style); // Bottom-left
+    drawLineBresenham(xc - size, yc, xc, yc - size, style); // Top-left
+}
+
+// ======================
+// Main Function
+// ======================
+int main() {
+    int gd = DETECT, gm;
+    initgraph(&gd, &gm, NULL);
+
+    // --- (a) DDA Rectangles ---
+    setcolor(WHITE);
+    outtextxy(50, 30, "DDA Line Drawing Algorithm");
+
+    outtextxy(80, 50, "Dotted Rectangle:");
+    drawRectangleDDA(80, 70, 150, 100, 1); // style 1 = dotted
+
+    outtextxy(300, 50, "Thick Rectangle:");
+    drawRectangleDDA(300, 70, 150, 100, 2); // style 2 = thick
+
+    // --- (b) Bresenham Diamonds ---
+    outtextxy(100, 230, "Bresenham Line Drawing Algorithm");
+
+    outtextxy(120, 250, "Dashed Diamond:");
+    drawDiamondBresenham(180, 340, 60, 1); // style 1 = dashed
+
+    outtextxy(360, 250, "Solid Diamond:");
+    drawDiamondBresenham(420, 340, 60, 2); // style 2 = solid
+
+    getch();
+    closegraph();
+    return 0;
+}
