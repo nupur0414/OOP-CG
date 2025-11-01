@@ -1,0 +1,135 @@
+#include <graphics.h>
+#include <iostream>
+#include <math.h>
+using namespace std;
+
+// Function to set pixel with different styles
+void drawStyledPixel(int x, int y, int xc, int yc, int style, int count) {
+    if (style == 1) // Solid
+        putpixel(xc + x, yc + y, WHITE);
+    else if (style == 2 && count % 3 == 0) // Dotted
+        putpixel(xc + x, yc + y, WHITE);
+    else if (style == 3 && count % 10 < 5) // Dashed
+        putpixel(xc + x, yc + y, WHITE);
+}
+
+// DDA Circle Drawing Algorithm (Approximation)
+void DDACircle(int xc, int yc, int r, int style) {
+    float x = 0, y = r;
+    float step = 1.0 / r;
+    float theta = 0;
+    int count = 0;
+
+    while (theta <= 2 * M_PI) {
+        x = r * cos(theta);
+        y = r * sin(theta);
+        drawStyledPixel(round(x), round(y), xc, yc, style, count++);
+        theta += step;
+    }
+}
+
+// Bresenham’s Circle Drawing Algorithm
+void BresenhamCircle(int xc, int yc, int r, int style) {
+    int x = 0, y = r;
+    int d = 3 - 2 * r;
+    int count = 0;
+
+    while (x <= y) {
+        drawStyledPixel(x, y, xc, yc, style, count++);
+        drawStyledPixel(y, x, xc, yc, style, count++);
+        drawStyledPixel(-x, y, xc, yc, style, count++);
+        drawStyledPixel(-y, x, xc, yc, style, count++);
+        drawStyledPixel(-x, -y, xc, yc, style, count++);
+        drawStyledPixel(-y, -x, xc, yc, style, count++);
+        drawStyledPixel(x, -y, xc, yc, style, count++);
+        drawStyledPixel(y, -x, xc, yc, style, count++);
+
+        if (d < 0)
+            d += 4 * x + 6;
+        else {
+            d += 4 * (x - y) + 10;
+            y--;
+        }
+        x++;
+    }
+}
+
+// Midpoint Circle Drawing Algorithm
+void MidpointCircle(int xc, int yc, int r, int style) {
+    int x = 0, y = r;
+    int p = 1 - r;
+    int count = 0;
+
+    while (x <= y) {
+        drawStyledPixel(x, y, xc, yc, style, count++);
+        drawStyledPixel(y, x, xc, yc, style, count++);
+        drawStyledPixel(-x, y, xc, yc, style, count++);
+        drawStyledPixel(-y, x, xc, yc, style, count++);
+        drawStyledPixel(-x, -y, xc, yc, style, count++);
+        drawStyledPixel(-y, -x, xc, yc, style, count++);
+        drawStyledPixel(x, -y, xc, yc, style, count++);
+        drawStyledPixel(y, -x, xc, yc, style, count++);
+
+        x++;
+        if (p < 0)
+            p += 2 * x + 1;
+        else {
+            y--;
+            p += 2 * (x - y) + 1;
+        }
+    }
+}
+
+// Menu function
+int main() {
+    int gd = DETECT, gm;
+    initgraph(&gd, &gm, "");
+
+    int choice, style, xc, yc, r;
+    do {
+        cleardevice();
+        cout << "\n===== Circle Drawing Algorithms =====";
+        cout << "\n1. DDA Circle";
+        cout << "\n2. Bresenham’s Circle";
+        cout << "\n3. Midpoint Circle";
+        cout << "\n4. Exit";
+        cout << "\nEnter choice: ";
+        cin >> choice;
+
+        if (choice == 4) break;
+
+        cout << "\nEnter center (xc, yc): ";
+        cin >> xc >> yc;
+        cout << "Enter radius: ";
+        cin >> r;
+
+        cout << "\nSelect style:";
+        cout << "\n1. Solid";
+        cout << "\n2. Dotted";
+        cout << "\n3. Dashed";
+        cout << "\nEnter style: ";
+        cin >> style;
+
+        cleardevice();
+        switch (choice) {
+            case 1:
+                DDACircle(xc, yc, r, style);
+                break;
+            case 2:
+                BresenhamCircle(xc, yc, r, style);
+                break;
+            case 3:
+                MidpointCircle(xc, yc, r, style);
+                break;
+            default:
+                cout << "Invalid choice!";
+        }
+
+        cout << "\nPress any key to continue...";
+        getch();
+
+    } while (choice != 4);
+
+    closegraph();
+    return 0;
+}
