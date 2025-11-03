@@ -1,121 +1,152 @@
-#include <graphics.h>
-#include <iostream>
-#include <cmath>
-using namespace std;
+import javax.swing.*;
+import java.awt.*;
 
-// ======================
-// DDA Line Drawing
-// ======================
-void drawLineDDA(int x1, int y1, int x2, int y2, int style) {
-    int dx = x2 - x1;
-    int dy = y2 - y1;
-    int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+public class GraphicsPattern {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Line Drawing Algorithms Pattern");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-    float Xinc = dx / (float)steps;
-    float Yinc = dy / (float)steps;
+            frame.add(new DrawingPanel());
 
-    float X = x1;
-    float Y = y1;
+            frame.pack(); // Size the frame to fit the preferred size of the panel
+            frame.setLocationRelativeTo(null); // Center the frame on the screen
+            frame.setVisible(true);
+        });
+    }
+}
 
-    for (int i = 0; i <= steps; i++) {
-        // Dotted style
-        if (style == 1 && i % 5 != 0) continue;
+class DrawingPanel extends JPanel {
+    private final int W = 400; // Width of the drawing area
+    private final int H = 300; // Height of the drawing area
 
-        // Thick style (draws multiple pixels nearby)
-        if (style == 2) {
-            putpixel(round(X), round(Y), WHITE);
-            putpixel(round(X)+1, round(Y), WHITE);
-            putpixel(round(X), round(Y)+1, WHITE);
+    public DrawingPanel() {
+        setPreferredSize(new Dimension(W, H));
+        setBackground(Color.WHITE);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g;
+        int rect1_x1 = 50, rect1_y1 = 50, rect1_x2 = 350, rect1_y2 = 250;
+        int rect2_x1 = 125, rect2_y1 = 100, rect2_x2 = 275, rect2_y2 = 200;
+        int diamond_ax = 200, diamond_ay = 50;
+        int diamond_bx = 350, diamond_by = 150;
+        int diamond_cx = 200, diamond_cy = 250;
+        int diamond_dx = 50, diamond_dy = 150;
+
+        g2d.setColor(Color.BLUE);
+
+        drawDDA_Line(g2d, rect1_x1, rect1_y1, rect1_x2, rect1_y1, true, true); // Top
+        drawDDA_Line(g2d, rect1_x2, rect1_y1, rect1_x2, rect1_y2, true, true); // Right
+        drawDDA_Line(g2d, rect1_x2, rect1_y2, rect1_x1, rect1_y2, true, true); // Bottom
+        drawDDA_Line(g2d, rect1_x1, rect1_y2, rect1_x1, rect1_y1, true, true); // Left
+
+        drawDDA_Line(g2d, rect2_x1, rect2_y1, rect2_x2, rect2_y1, true, true); // Top
+        drawDDA_Line(g2d, rect2_x2, rect2_y1, rect2_x2, rect2_y2, true, true); // Right
+        drawDDA_Line(g2d, rect2_x2, rect2_y2, rect2_x1, rect2_y2, true, true); // Bottom
+        drawDDA_Line(g2d, rect2_x1, rect2_y2, rect2_x1, rect2_y1, true, true); // Left
+
+        // (b) Bresenham's Line Drawing for Diamond with Dashed, Solid line style
+        g2d.setColor(Color.RED);
+        drawBresenham_Line(g2d, diamond_ax, diamond_ay, diamond_bx, diamond_by, true); // A to B
+        drawBresenham_Line(g2d, diamond_bx, diamond_by, diamond_cx, diamond_cy, true); // B to C
+        drawBresenham_Line(g2d, diamond_cx, diamond_cy, diamond_dx, diamond_dy, true); // C to D
+        drawBresenham_Line(g2d, diamond_dx, diamond_dy, diamond_ax, diamond_ay, true); // D to A
+    }
+
+    /**
+     * Plots a single pixel with optional thickness (3x3 neighborhood).
+     */
+    private void plotPixel(Graphics2D g2d, int x, int y, boolean thick) {
+        if (thick) {
+            // Thick line (3x3 neighborhood)
+            g2d.fillRect(x - 1, y - 1, 3, 3);
         } else {
-            putpixel(round(X), round(Y), WHITE);
-        }
-
-        X += Xinc;
-        Y += Yinc;
-    }
-}
-
-// ======================
-// Bresenham Line Drawing
-// ======================
-void drawLineBresenham(int x1, int y1, int x2, int y2, int style) {
-    int dx = abs(x2 - x1);
-    int dy = abs(y2 - y1);
-    int sx = (x1 < x2) ? 1 : -1;
-    int sy = (y1 < y2) ? 1 : -1;
-    int err = dx - dy;
-
-    while (true) {
-        // Dashed style
-        if (style == 1 && ((x1 + y1) / 5) % 2 == 0)
-            putpixel(x1, y1, WHITE);
-
-        // Solid style
-        if (style == 2)
-            putpixel(x1, y1, WHITE);
-
-        if (x1 == x2 && y1 == y2)
-            break;
-
-        int e2 = 2 * err;
-        if (e2 > -dy) {
-            err -= dy;
-            x1 += sx;
-        }
-        if (e2 < dx) {
-            err += dx;
-            y1 += sy;
+            // Thin line (single pixel)
+            g2d.drawLine(x, y, x, y);
         }
     }
-}
 
-// ======================
-// Draw Rectangle using DDA
-// ======================
-void drawRectangleDDA(int x, int y, int width, int height, int style) {
-    drawLineDDA(x, y, x + width, y, style);           // Top
-    drawLineDDA(x + width, y, x + width, y + height, style); // Right
-    drawLineDDA(x + width, y + height, x, y + height, style); // Bottom
-    drawLineDDA(x, y + height, x, y, style);          // Left
-}
+    /**
+     * DDA Line Drawing Algorithm Implementation.
+     */
+    private void drawDDA_Line(Graphics2D g2d, int x1, int y1, int x2, int y2, boolean dotted, boolean thick) {
+        double dx = x2 - x1;
+        double dy = y2 - y1;
 
-// ======================
-// Draw Diamond using Bresenham
-// ======================
-void drawDiamondBresenham(int xc, int yc, int size, int style) {
-    drawLineBresenham(xc, yc - size, xc + size, yc, style); // Top-right
-    drawLineBresenham(xc + size, yc, xc, yc + size, style); // Bottom-right
-    drawLineBresenham(xc, yc + size, xc - size, yc, style); // Bottom-left
-    drawLineBresenham(xc - size, yc, xc, yc - size, style); // Top-left
-}
+        double steps = Math.max(Math.abs(dx), Math.abs(dy));
 
-// ======================
-// Main Function
-// ======================
-int main() {
-    int gd = DETECT, gm;
-    initgraph(&gd, &gm, NULL);
+        double x_inc = dx / steps;
+        double y_inc = dy / steps;
 
-    // --- (a) DDA Rectangles ---
-    setcolor(WHITE);
-    outtextxy(50, 30, "DDA Line Drawing Algorithm");
+        double x = x1;
+        double y = y1;
 
-    outtextxy(80, 50, "Dotted Rectangle:");
-    drawRectangleDDA(80, 70, 150, 100, 1); // style 1 = dotted
+        int dot_counter = 0;
+        int DOT_SKIP = 6; // Plot 3, Skip 3 (for Dotted style)
 
-    outtextxy(300, 50, "Thick Rectangle:");
-    drawRectangleDDA(300, 70, 150, 100, 2); // style 2 = thick
+        for (int i = 0; i <= steps; i++) {
+            // Apply Dotted style: Plot only for the first half of the skip cycle
+            if (!dotted || (dot_counter % DOT_SKIP < DOT_SKIP / 2)) {
+                plotPixel(g2d, (int) Math.round(x), (int) Math.round(y), thick);
+            }
+            dot_counter++;
 
-    // --- (b) Bresenham Diamonds ---
-    outtextxy(100, 230, "Bresenham Line Drawing Algorithm");
+            x += x_inc;
+            y += y_inc;
+        }
+    }
 
-    outtextxy(120, 250, "Dashed Diamond:");
-    drawDiamondBresenham(180, 340, 60, 1); // style 1 = dashed
+    /**
+     * Bresenham's Line Drawing Algorithm Implementation (simplified octant handling).
+     */
+    private void drawBresenham_Line(Graphics2D g2d, int x1, int y1, int x2, int y2, boolean dashed) {
+        // --- Setup for General Bresenham's ---
+        int dx = Math.abs(x2 - x1);
+        int dy = Math.abs(y2 - y1);
+        int sx = x1 < x2 ? 1 : -1;
+        int sy = y1 < y2 ? 1 : -1;
+        boolean is_steep = dy > dx; // Check if slope > 1
 
-    outtextxy(360, 250, "Solid Diamond:");
-    drawDiamondBresenham(420, 340, 60, 2); // style 2 = solid
+        if (is_steep) {
+            // Swap x and y coordinates and signs if slope is steep
+            int temp = dx; dx = dy; dy = temp;
+            temp = x1; x1 = y1; y1 = temp;
+            temp = x2; x2 = y2; y2 = temp;
+            temp = sx; sx = sy; sy = temp;
+        }
 
-    getch();
-    closegraph();
-    return 0;
+        // --- Core Algorithm ---
+        int p = 2 * dy - dx;
+        int twoDy = 2 * dy;
+        int twoDyMinusTwoDx = 2 * (dy - dx);
+        int x = x1, y = y1;
+
+        // --- Dashed Style Logic ---
+        int dash_counter = 0;
+        int DASH_SKIP = 12; // Cycle length
+        int dash_plot_length = 8; // Plot 8, Skip 4
+
+        for (int i = 0; i <= dx; i++) {
+            // Map the coordinates back if they were swapped (steep line)
+            int plotX = is_steep ? y : x;
+            int plotY = is_steep ? x : y;
+
+            if (!dashed || (dash_counter % DASH_SKIP < dash_plot_length)) {
+                // Draws a single pixel (Solid line style requirement)
+                g2d.drawLine(plotX, plotY, plotX, plotY);
+            }
+            dash_counter++;
+            
+if (p < 0) {
+                p += twoDy;
+            } else {
+                p += twoDyMinusTwoDx;
+                y += sy;
+            }
+            x += sx;
+        }
+    }
 }
