@@ -1,135 +1,204 @@
-#include <graphics.h>
-#include <iostream>
-#include <math.h>
-using namespace std;
+import javax.swing.*;
+import java.awt.*;
+import java.util.Scanner;
 
-// Function to set pixel with different styles
-void drawStyledPixel(int x, int y, int xc, int yc, int style, int count) {
-    if (style == 1) // Solid
-        putpixel(xc + x, yc + y, WHITE);
-    else if (style == 2 && count % 3 == 0) // Dotted
-        putpixel(xc + x, yc + y, WHITE);
-    else if (style == 3 && count % 10 < 5) // Dashed
-        putpixel(xc + x, yc + y, WHITE);
-}
+public class cg extends JPanel {
+    private int radius;
+    private String algorithm;
+    private String style;
+    private int centerX, centerY;
 
-// DDA Circle Drawing Algorithm (Approximation)
-void DDACircle(int xc, int yc, int r, int style) {
-    float x = 0, y = r;
-    float step = 1.0 / r;
-    float theta = 0;
-    int count = 0;
-
-    while (theta <= 2 * M_PI) {
-        x = r * cos(theta);
-        y = r * sin(theta);
-        drawStyledPixel(round(x), round(y), xc, yc, style, count++);
-        theta += step;
+    public cg(int radius, String algorithm, String style) {
+        this.radius = radius;
+        this.algorithm = algorithm.toLowerCase();
+        this.style = style.toLowerCase();
+        this.setPreferredSize(new Dimension(500, 500));
+        centerX = 250;
+        centerY = 250;
     }
-}
 
-// Bresenham’s Circle Drawing Algorithm
-void BresenhamCircle(int xc, int yc, int r, int style) {
-    int x = 0, y = r;
-    int d = 3 - 2 * r;
-    int count = 0;
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
 
-    while (x <= y) {
-        drawStyledPixel(x, y, xc, yc, style, count++);
-        drawStyledPixel(y, x, xc, yc, style, count++);
-        drawStyledPixel(-x, y, xc, yc, style, count++);
-        drawStyledPixel(-y, x, xc, yc, style, count++);
-        drawStyledPixel(-x, -y, xc, yc, style, count++);
-        drawStyledPixel(-y, -x, xc, yc, style, count++);
-        drawStyledPixel(x, -y, xc, yc, style, count++);
-        drawStyledPixel(y, -x, xc, yc, style, count++);
-
-        if (d < 0)
-            d += 4 * x + 6;
-        else {
-            d += 4 * (x - y) + 10;
-            y--;
-        }
-        x++;
-    }
-}
-
-// Midpoint Circle Drawing Algorithm
-void MidpointCircle(int xc, int yc, int r, int style) {
-    int x = 0, y = r;
-    int p = 1 - r;
-    int count = 0;
-
-    while (x <= y) {
-        drawStyledPixel(x, y, xc, yc, style, count++);
-        drawStyledPixel(y, x, xc, yc, style, count++);
-        drawStyledPixel(-x, y, xc, yc, style, count++);
-        drawStyledPixel(-y, x, xc, yc, style, count++);
-        drawStyledPixel(-x, -y, xc, yc, style, count++);
-        drawStyledPixel(-y, -x, xc, yc, style, count++);
-        drawStyledPixel(x, -y, xc, yc, style, count++);
-        drawStyledPixel(y, -x, xc, yc, style, count++);
-
-        x++;
-        if (p < 0)
-            p += 2 * x + 1;
-        else {
-            y--;
-            p += 2 * (x - y) + 1;
-        }
-    }
-}
-
-// Menu function
-int main() {
-    int gd = DETECT, gm;
-    initgraph(&gd, &gm, "");
-
-    int choice, style, xc, yc, r;
-    do {
-        cleardevice();
-        cout << "\n===== Circle Drawing Algorithms =====";
-        cout << "\n1. DDA Circle";
-        cout << "\n2. Bresenham’s Circle";
-        cout << "\n3. Midpoint Circle";
-        cout << "\n4. Exit";
-        cout << "\nEnter choice: ";
-        cin >> choice;
-
-        if (choice == 4) break;
-
-        cout << "\nEnter center (xc, yc): ";
-        cin >> xc >> yc;
-        cout << "Enter radius: ";
-        cin >> r;
-
-        cout << "\nSelect style:";
-        cout << "\n1. Solid";
-        cout << "\n2. Dotted";
-        cout << "\n3. Dashed";
-        cout << "\nEnter style: ";
-        cin >> style;
-
-        cleardevice();
-        switch (choice) {
-            case 1:
-                DDACircle(xc, yc, r, style);
+        switch (algorithm) {
+            case "dda":
+                drawCircleDDA(g, centerX, centerY, radius);
                 break;
-            case 2:
-                BresenhamCircle(xc, yc, r, style);
+            case "bresenham":
+                drawCircleBresenham(g, centerX, centerY, radius);
                 break;
-            case 3:
-                MidpointCircle(xc, yc, r, style);
+            case "midpoint":
+                drawCircleMidpoint(g, centerX, centerY, radius);
                 break;
             default:
-                cout << "Invalid choice!";
+                g.drawString("Invalid Algorithm", 20, 20);
+        }
+    }
+
+    private void plotPoints(Graphics g, int cx, int cy, int x, int y, int step) {
+        boolean drawPoint = false;
+        switch (style) {
+            case "solid":
+                drawPoint = true;
+                break;
+            case "dotted":
+                drawPoint = (step % 4 == 0);
+                break;
+            case "dashed":
+                drawPoint = (step % 10 < 6);
+                break;
         }
 
-        cout << "\nPress any key to continue...";
-        getch();
+        if (drawPoint) {
+            g.drawLine(cx + x, cy + y, cx + x, cy + y);
+            g.drawLine(cx - x, cy + y, cx - x, cy + y);
+            g.drawLine(cx + x, cy - y, cx + x, cy - y);
+            g.drawLine(cx - x, cy - y, cx - x, cy - y);
+            g.drawLine(cx + y, cy + x, cx + y, cy + x);
+            g.drawLine(cx - y, cy + x, cx - y, cy + x);
+            g.drawLine(cx + y, cy - x, cx + y, cy - x);
+            g.drawLine(cx - y, cy - x, cx - y, cy - x);
+        }
+    }
 
-    } while (choice != 4);
+    private void drawCircleDDA(Graphics g, int cx, int cy, int r) {
+        double x = r;
+        double y = 0;
+        double e = 1 - r;
+        int step = 0;
 
-    closegraph();
-    return 0;
+        while (x >= y) {
+            plotPoints(g, cx, cy, (int) Math.round(x), (int) Math.round(y), step);
+            y += 1;
+            if (e < 0) {
+                e += 2 * y + 1;
+            } else {
+                x -= 1;
+                e += 2 * (y - x) + 1;
+            }
+            step++;
+        }
+    }
+
+    // Bresenham's Circle Drawing Algorithm
+    private void drawCircleBresenham(Graphics g, int cx, int cy, int r) {
+        int x = 0;
+        int y = r;
+        int d = 3 - 2 * r;
+        int step = 0;
+        while (x <= y) {
+            plotPoints(g, cx, cy, x, y, step);
+            if (d < 0) {
+                d = d + 4 * x + 6;
+            } else {
+                d = d + 4 * (x - y) + 10;
+                y--;
+            }
+            x++;
+            step++;
+        }
+    }
+
+    // Midpoint Circle Drawing Algorithm
+    private void drawCircleMidpoint(Graphics g, int cx, int cy, int r) {
+        int x = r;
+        int y = 0;
+        int p = 1 - r;
+        int step = 0;
+        while (x >= y) {
+            plotPoints(g, cx, cy, x, y, step);
+            y++;
+            if (p < 0) {
+                p = p + 2 * y + 1;
+            } else {
+                x--;
+                p = p + 2 * (y - x) + 1;
+            }
+            step++;
+        }
+    }
+
+    // Main method with menu-driven input and GUI display
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        while (true) {
+            System.out.println("Circle Drawing Algorithms");
+            System.out.println("1. DDA");
+            System.out.println("2. Bresenham");
+            System.out.println("3. Midpoint");
+            System.out.println("4. Exit");
+            System.out.print("Select Algorithm: ");
+            int algChoice = sc.nextInt();
+            if (algChoice == 4) break;
+
+            String algorithm = "";
+            switch (algChoice) {
+                case 1:
+                    algorithm = "dda";
+                    break;
+                case 2:
+                    algorithm = "bresenham";
+                    break;
+                case 3:
+                    algorithm = "midpoint";
+                    break;
+                default:
+                    System.out.println("Invalid choice! Try again.");
+                    continue;
+            }
+
+            System.out.print("Enter radius of circle: ");
+            int radius = sc.nextInt();
+            if (radius <= 0) {
+                System.out.println("Radius must be positive!");
+                continue;
+            }
+
+            System.out.println("Select Style:");
+            System.out.println("1. Solid");
+            System.out.println("2. Dotted");
+            System.out.println("3. Dashed");
+            System.out.print("Choice: ");
+            int styleChoice = sc.nextInt();
+
+            String style = "";
+            switch (styleChoice) {
+                case 1:
+                    style = "solid";
+                    break;
+                case 2:
+                    style = "dotted";
+                    break;
+                case 3:
+                    style = "dashed";
+                    break;
+                default:
+                    System.out.println("Invalid style! Try again.");
+                    continue;
+            }
+
+            JFrame frame = new JFrame("Circle Drawing - " + algorithm.toUpperCase() + " - " + style);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+            cg panel = new cg(radius, algorithm, style);
+            frame.add(panel);
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+
+            System.out.println("Close the drawing window to continue...");
+            while (frame.isVisible()) {
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        System.out.println("Program terminated.");
+        sc.close();
+    }
 }
